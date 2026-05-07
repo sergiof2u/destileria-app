@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Destilería · Ron de Panela</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--ac:#BA7517;--al:#FAEEDA;--ad:#633806;--bg:#f8f6f2;--card:#ffffff;--border:#e8e0d4;--text:#1a1410;--muted:#8a7d6a;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;padding-bottom:80px;max-width:480px;margin:0 auto;}
+.hdr{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px 10px;position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:8px;}
+.hdr-back{background:none;border:none;font-size:22px;color:var(--ac);cursor:pointer;padding:0 8px 0 0;line-height:1;}
+.hdr-title{font-size:17px;font-weight:600;}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.sync-dot{margin-left:auto;font-size:13px;cursor:default;transition:color .3s;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-btn{flex:1;padding:9px 2px 7px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:var(--muted);font-family:inherit;}
+.nav-btn.active{color:var(--ac);}
+.nav-icon{font-size:18px;}
+.sec{padding:12px 16px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.card.accent{border-left:3px solid var(--ac);}
+.card.green{border-left:3px solid #639922;}
+.card-row{display:flex;justify-content:space-between;align-items:center;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.stat{background:#f0ebe4;border-radius:8px;padding:10px 12px;text-align:center;}
+.stat-val{font-size:22px;font-weight:600;display:block;}
+.stat-lbl{font-size:11px;color:var(--muted);display:block;margin-top:2px;}
+label.lbl{font-size:12px;color:var(--muted);display:block;margin-bottom:3px;font-weight:500;}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:14px;background:var(--card);color:var(--text);margin-bottom:10px;}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);border-color:var(--ac);}
+textarea{resize:vertical;min-height:60px;}
+.btn{width:100%;padding:11px;background:var(--ac);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;font-family:inherit;}
+.btn:hover{background:#9a5f10;}
+.btn-s{width:100%;padding:11px;background:#f0ebe4;border:1px solid var(--border);border-radius:8px;font-size:14px;cursor:pointer;margin-top:6px;color:var(--text);font-family:inherit;}
+.btn-s:hover{background:#e8e0d4;}
+.btn-x{padding:8px 14px;background:#f0ebe4;border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;color:var(--text);font-family:inherit;}
+.btn-green{padding:8px 14px;background:#EAF3DE;border:1px solid #97C459;border-radius:8px;font-size:12px;cursor:pointer;color:#27500A;font-family:inherit;}
+.btn-danger{padding:8px 14px;background:#FCEBEB;border:1px solid #F09595;border-radius:8px;font-size:12px;cursor:pointer;color:#A32D2D;font-family:inherit;}
+.btn-full{flex:1;}
+.bdg{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+.bdg-amber{background:var(--al);color:var(--ad);}
+.bdg-green{background:#EAF3DE;color:#27500A;}
+.bdg-red{background:#FCEBEB;color:#A32D2D;}
+.bdg-gray{background:#F1EFE8;color:#5F5E5A;}
+.tr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);}
+.tr span:first-child{font-size:12px;color:var(--muted);}
+.tr span:last-child{font-size:13px;font-weight:500;}
+h2{font-size:15px;font-weight:600;margin:0 0 10px;}
+h3{font-size:13px;font-weight:600;margin:10px 0 6px;color:var(--text);}
+.muted{font-size:12px;color:var(--muted);}
+.divider{border-top:1px solid var(--border);margin:10px 0;}
+.chip{padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:#f0ebe4;color:var(--text);font-family:inherit;}
+.chip.on{background:var(--al);color:var(--ad);border-color:var(--ac);}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.frac-cabezas{background:#FCEBEB;color:#A32D2D;}
+.frac-corazones{background:#EAF3DE;color:#27500A;}
+.frac-colas{background:var(--al);color:var(--ad);}
+.btn-row{display:flex;gap:8px;margin-top:4px;}
+.hidden{display:none!important;}
+.sub-card{background:#f8f6f2;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.sub-card h3{color:var(--ac);}
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:12px;color:var(--muted);}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="app"><div id="loading"><div class="loading-spinner"></div><span>Conectando con Firebase...</span></div></div>
+
+<script>
+// ─── FIREBASE INIT ─────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCuv6dMEP65tChp_AFPLc-RNK3D7m78bzw",
+  authDomain: "destileria-cascajal-resplandor.firebaseapp.com",
+  projectId: "destileria-cascajal-resplandor",
+  storageBucket: "destileria-cascajal-resplandor.firebasestorage.app",
+  messagingSenderId: "319169434276",
+  appId: "1:319169434276:web:0413897a35d35059b74c31"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+// ─── SYNC ──────────────────────────────────────────────────────────────────────
+var syncStatus = 'ok';
+function setSyncStatus(s){
+  syncStatus = s;
+  var dot = document.getElementById('sync-dot');
+  if(!dot) return;
+  if(s==='saving'){ dot.textContent='⟳'; dot.style.color='#BA7517'; dot.title='Guardando...'; }
+  else if(s==='error'){ dot.textContent='⚠'; dot.style.color='#A32D2D'; dot.title='Error al guardar'; }
+  else { dot.textContent='●'; dot.style.color='#639922'; dot.title='Sincronizado con Firebase'; }
+}
+
+function syncCollection(colName, oldArr, newArr){
+  setSyncStatus('saving');
+  var newIds = new Set(newArr.map(function(x){ return x.id; }));
+  var promises = [];
+  oldArr.forEach(function(x){
+    if(!newIds.has(x.id)) promises.push(db.collection(colName).doc(x.id).delete());
+  });
+  newArr.forEach(function(x){
+    promises.push(db.collection(colName).doc(x.id).set(x));
+  });
+  if(promises.length === 0){ setSyncStatus('ok'); return; }
+  Promise.all(promises)
+    .then(function(){ setSyncStatus('ok'); })
+    .catch(function(err){ console.error(err); setSyncStatus('error'); });
+}
+
+async function loadAll(){
+  var results = await Promise.all([
+    db.collection('fermentaciones').get(),
+    db.collection('destilaciones').get(),
+    db.collection('saneamientos').get()
+  ]);
+  state.F = results[0].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (parseInt(b.numero)||0)-(parseInt(a.numero)||0); });
+  state.D = results[1].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (parseInt(b.numero)||0)-(parseInt(a.numero)||0); });
+  state.S = results[2].docs.map(function(d){ return d.data(); }).sort(function(a,b){ return b.fecha>a.fecha?1:-1; });
+}
+
+// ─── STATE & HELPERS ───────────────────────────────────────────────────────────
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const today = () => new Date().toISOString().slice(0,10);
+const todayFile = () => { var d=new Date(); return ('0'+d.getDate()).slice(-2)+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+d.getFullYear(); };
+const nowT = () => new Date().toTimeString().slice(0,5);
+const fmtDate = d => d ? new Date(d+'T12:00').toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+
+var state = {
+  tab: 'dashboard',
+  view: 'list',
+  sel: null,
+  F: [],
+  D: [],
+  S: [],
+};
+
+function saveF(data){ syncCollection('fermentaciones', state.F, data); state.F=data; }
+function saveD(data){ syncCollection('destilaciones', state.D, data); state.D=data; }
+function saveS(data){ syncCollection('saneamientos', state.S, data); state.S=data; }
+
+function go(tab,view,sel){
+  state.tab=tab||state.tab;
+  state.view=view||'list';
+  state.sel=sel||null;
+  render();
+}
+
+// ─── PDF ──────────────────────────────────────────────────────────────────────
+function tr(l,v){ return '<tr><td>'+l+'</td><td>'+v+'</td></tr>'; }
+
+function openPDF(title, body){
+  var css = 'body{font-family:Arial,sans-serif;font-size:11px;color:#111;max-width:720px;margin:0 auto;padding:20px}'
+    +'h1{font-size:16px;border-bottom:2px solid #BA7517;padding-bottom:8px;margin-bottom:12px}'
+    +'h2{font-size:13px;color:#BA7517;margin:14px 0 5px;border-bottom:1px solid #eee;padding-bottom:3px}'
+    +'table{width:100%;border-collapse:collapse;margin:4px 0}'
+    +'td{padding:4px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top}'
+    +'td:first-child{color:#666;width:40%;font-weight:500}'
+    +'th{background:#f5f0e8;padding:5px 8px;text-align:left;font-size:10px;color:#555}'
+    +'@media print{.noprint{display:none}}';
+  var hdr = '<div style="display:flex;justify-content:space-between;margin-bottom:14px">'
+    +'<div><div style="font-size:10px;color:#BA7517;font-weight:600;letter-spacing:.1em">DESTILERÍA ARTESANAL · RON DE PANELA</div>'
+    +'<div style="font-size:10px;color:#888">Subachoque, Cundinamarca · BPM INVIMA</div></div>'
+    +'<div style="text-align:right;font-size:10px;color:#888">Generado: '+new Date().toLocaleString('es-CO')+'</div></div>';
+  var ftr = '<div style="margin-top:24px;border-top:1px solid #eee;padding-top:10px;font-size:10px;color:#888">'
+    +'Documento para archivo y presentación INVIMA.<br><br>'
+    +'Firma responsable: ___________________________ &nbsp;&nbsp; Fecha: _______________</div>'
+    +'<button class="noprint" onclick="window.print()" style="margin-top:16px;padding:8px 20px;background:#BA7517;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px">Imprimir / Guardar PDF</button>';
+  var w = window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title><style>'+css+'</style></head><body>'+hdr+body+ftr+'</body></html>');
+  w.document.close();
+}
+
+function pdfFerm(f){
+  var segs = '';
+  if(f.seguimiento && f.seguimiento.length){
+    segs = '<h2>Seguimiento</h2><table><tr><th>Fecha/Hora</th><th>Densidad</th><th>Brix</th><th>Observacion</th></tr>';
+    f.seguimiento.forEach(function(sg){ segs+='<tr><td>'+sg.fecha+' '+sg.hora+'</td><td>'+(sg.densidad||'—')+'</td><td>'+(sg.brix||'—')+'</td><td>'+(sg.observacion||'')+'</td></tr>'; });
+    segs+='</table>';
+  }
+  var body = '<h1>Fermentación #'+f.numero+'</h1>'
+    +'<h2>Datos generales</h2><table>'+tr('Fecha inicio',fmtDate(f.fechaInicio))+(f.fechaFin?tr('Fecha fin fermentación',fmtDate(f.fechaFin)):'')+( f.fechaTraslado?tr('Traslado al destilador',fmtDate(f.fechaTraslado)):'' )+( f.duracionDias?tr('Duración',f.duracionDias+' días'):'' )+'</table>'
+    +'<h2>Materia prima</h2><table>'+tr('Panela',(f.panela_kg||'—')+' kg')+tr('Agua',(f.volumenAgua||'—')+' litros')+tr('Levadura',(f.levadura_g||'—')+' g · '+(f.levadura_tipo||''))+tr('Fosfato diamonio',(f.fosfatoDiamonio_g||'—')+' g')+tr('Sulfato magnesio',(f.sulfatoMagnesio_g||'—')+' g')+tr('Sulfato calcio',(f.sulfatoCalcio_g||'—')+' g')+tr('Ácido cítrico',(f.acidoCitrico_g||'—')+' g')+'</table>'
+    +'<h2>Cocción</h2><table>'+tr('Hora inicio cocción',f.horaInicioCoccion||'—')+tr('Hora inicio hervor',f.horaHervor||'—')+tr('Duración hervor',(f.duracionHervor_min||'—')+' min')+'</table>'
+    +'<h2>Parámetros iniciales</h2><table>'+tr('Brix inicial',f.brixInicial||'—')+tr('Densidad inicial',f.densidadInicial||'—')+tr('pH inicial',f.phInicial||'—')+tr('pH ajustado',f.phAjustado||'—')+tr('Temp. inoculación',(f.tempInoculacion||'—')+' °C')+'</table>'
+    +segs
+    +(f.densidadFinal?'<h2>Cierre</h2><table>'+tr('Densidad final',f.densidadFinal)+tr('Brix final',f.brixFinal||'—')+'</table>':'')
+    +(f.observaciones?'<h2>Observaciones</h2><p>'+f.observaciones+'</p>':'');
+  openPDF('Fermentación #'+f.numero, body);
+}
+
+function pdfDest(d){
+  var tlp = {cabezas:'Cabezas',corazones:'Corazones',colas:'Colas'};
+  var fracs = d.fracciones||[];
+  var cab = fracs.filter(function(f){return f.tipo==='cabezas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+  var cor = fracs.filter(function(f){return f.tipo==='corazones';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+  var col = fracs.filter(function(f){return f.tipo==='colas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+  var fracRows = '';
+  if(fracs.length){
+    fracRows='<h2>Fracciones recolectadas</h2><table><tr><th>Hora</th><th>Tipo</th><th>Volumen</th><th>ABV</th><th>T.Caldera</th><th>T.Refrig.</th><th>Notas organolepticas</th></tr>';
+    fracs.forEach(function(fr){ fracRows+='<tr><td>'+fr.hora+'</td><td>'+(tlp[fr.tipo]||fr.tipo)+'</td><td>'+fr.volumen_ml+' mL</td><td>'+fr.abv+'%</td><td>'+(fr.tempCaldera||'—')+'°C</td><td>'+(fr.tempRefrigeracion||'—')+'°C</td><td>'+(fr.notas||'')+'</td></tr>'; });
+    fracRows+='</table>';
+  }
+  var intRows = '';
+  if((d.intervenciones||[]).length){
+    intRows='<h2>Intervenciones</h2><table><tr><th>Hora</th><th>Descripción</th></tr>';
+    d.intervenciones.forEach(function(iv){ intRows+='<tr><td>'+iv.hora+'</td><td>'+iv.descripcion+'</td></tr>'; });
+    intRows+='</table>';
+  }
+  var body = '<h1>Destilación #'+d.numero+'</h1>'
+    +'<h2>Datos generales</h2><table>'+tr('Fecha',fmtDate(d.fecha))+tr('Hora inicio',d.horaInicio||'—')+'</table>'
+    +'<h2>Condiciones iniciales</h2><table>'+tr('Densidad mosto',d.densidadMostoInicial||'—')+tr('Temperatura caldera',(d.tempCaldera||'—')+' °C')+tr('Temperatura refrigeración',(d.tempRefrigeracion||'—')+' °C')+'</table>'
+    +(d.insumosEspeciales?'<h2>Insumos especiales</h2><p>'+d.insumosEspeciales+'</p>':'')
+    +'<h2>Resumen de producción</h2><table>'+tr('Cabezas',cab+' mL ('+( cab/1000).toFixed(3)+' L)')+tr('Corazones',cor+' mL ('+(cor/1000).toFixed(3)+' L)')+tr('Colas',col+' mL ('+(col/1000).toFixed(3)+' L)')+(d.eficiencia?tr('Eficiencia',d.eficiencia+'%'):'')+'</table>'
+    +fracRows+intRows
+    +(d.observaciones?'<h2>Observaciones</h2><p>'+d.observaciones+'</p>':'');
+  openPDF('Destilación #'+d.numero, body);
+}
+
+function pdfSan(s){
+  var tl={lavado:'Lavado',desinfeccion:'Desinfección',ambos:'Lavado + Desinfección'};
+  var body = '<h1>Registro de Saneamiento · BPM INVIMA</h1>'
+    +'<h2>Datos generales</h2><table>'+tr('Fecha',fmtDate(s.fecha))+tr('Hora',s.hora||'—')+tr('Tipo de operación',tl[s.tipo]||s.tipo)+tr('Equipos / Áreas',(s.equipos||[]).join(', ')||'—')+(s.responsable?tr('Responsable',s.responsable):'')+'</table>'
+    +((s.tipo==='lavado'||s.tipo==='ambos')&&s.detergente?'<h2>Procedimiento de lavado</h2><table>'+tr('Detergente',s.detergente)+tr('Concentración',s.concentracionDetergente||'—')+tr('Volumen solución',(s.volumenDetergente||'—')+' mL')+'</table>':'')
+    +((s.tipo==='desinfeccion'||s.tipo==='ambos')?'<h2>Procedimiento de desinfección</h2><table>'+tr('Desinfectante',s.desinfectante||'—')+tr('Dilución',s.concentracionDesinfectante||'—')+tr('Volumen solución',(s.volumenDesinfectante||'—')+' mL')+tr('Tiempo de contacto',(s.tiempoContacto_min||'—')+' min')+'</table>':'')
+    +(s.observaciones?'<h2>Observaciones</h2><p>'+s.observaciones+'</p>':'');
+  openPDF('Registro de Saneamiento', body);
+}
+
+// ─── EXCEL ────────────────────────────────────────────────────────────────────
+function exportExcel(){
+  if(!window.XLSX){ alert('Librería Excel cargando, intenta en unos segundos.'); return; }
+  var wb = XLSX.utils.book_new();
+  var fd = state.F.length ? state.F.map(function(f){ return {'N':f.numero,'Fecha inicio':fmtDate(f.fechaInicio),'Estado':f.estado,'Panela kg':f.panela_kg,'Agua L':f.volumenAgua,'Levadura g':f.levadura_g,'Tipo levadura':f.levadura_tipo,'Fosfato diamonio g':f.fosfatoDiamonio_g,'Sulfato magnesio g':f.sulfatoMagnesio_g,'Sulfato calcio g':f.sulfatoCalcio_g,'Acido citrico g':f.acidoCitrico_g,'Brix inicial':f.brixInicial,'Densidad inicial':f.densidadInicial,'pH inicial':f.phInicial,'pH ajustado':f.phAjustado,'Temp inoculacion C':f.tempInoculacion,'Fecha fin':fmtDate(f.fechaFin),'Densidad final':f.densidadFinal,'Brix final':f.brixFinal,'Duracion dias':f.duracionDias,'Observaciones':f.observaciones}; }) : [{}];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fd), 'Fermentaciones');
+  var dd = state.D.length ? state.D.map(function(d){ var fr=d.fracciones||[]; var cab=fr.filter(function(f){return f.tipo==='cabezas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0); var cor=fr.filter(function(f){return f.tipo==='corazones';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0); var col=fr.filter(function(f){return f.tipo==='colas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0); return {'N':d.numero,'Fecha':fmtDate(d.fecha),'Hora inicio':d.horaInicio,'Estado':d.estado,'Densidad mosto':d.densidadMostoInicial,'Temp caldera inicial':d.tempCaldera,'Temp refrig inicial':d.tempRefrigeracion,'Insumos especiales':d.insumosEspeciales,'Cabezas mL':cab,'Corazones mL':cor,'Colas mL':col,'Eficiencia pct':d.eficiencia,'Observaciones':d.observaciones}; }) : [{}];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dd), 'Destilaciones');
+  var sd = state.S.length ? state.S.map(function(s){ return {'Fecha':fmtDate(s.fecha),'Hora':s.hora,'Tipo':s.tipo,'Equipos':(s.equipos||[]).join(', '),'Detergente':s.detergente,'Concentracion detergente':s.concentracionDetergente,'Desinfectante':s.desinfectante,'Dilucion desinfectante':s.concentracionDesinfectante,'Tiempo contacto min':s.tiempoContacto_min,'Responsable':s.responsable,'Observaciones':s.observaciones}; }) : [{}];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sd), 'Saneamiento');
+  XLSX.writeFile(wb, 'destileria_registros_'+todayFile()+'.xlsx');
+}
+
+// ─── BACKUP ───────────────────────────────────────────────────────────────────
+function exportBackup(){
+  var data = JSON.stringify({fermentaciones:state.F,destilaciones:state.D,saneamientos:state.S,exportedAt:new Date().toISOString()},null,2);
+  var blob = new Blob([data],{type:'application/json'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='destileria_backup_'+todayFile()+'.json'; a.click();
+}
+
+function importBackup(e){
+  var file = e.target.files[0]; if(!file) return;
+  var r = new FileReader();
+  r.onload = function(ev){
+    try{
+      var data = JSON.parse(ev.target.result);
+      var msg = 'Importar: '+(data.fermentaciones||[]).length+' fermentaciones, '+(data.destilaciones||[]).length+' destilaciones, '+(data.saneamientos||[]).length+' saneamientos.\n¿Reemplazar datos actuales?';
+      if(confirm(msg)){ saveF(data.fermentaciones||[]); saveD(data.destilaciones||[]); saveS(data.saneamientos||[]); go('dashboard'); }
+    }catch(ex){ alert('Archivo inválido'); }
+  };
+  r.readAsText(file);
+}
+
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+function h(tag, attrs, ...children){
+  var el = document.createElement(tag);
+  if(attrs) Object.keys(attrs).forEach(function(k){
+    if(k==='class') el.className=attrs[k];
+    else if(k==='style'&&typeof attrs[k]==='object') Object.assign(el.style,attrs[k]);
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(),attrs[k]);
+    else el.setAttribute(k,attrs[k]);
+  });
+  children.forEach(function(c){
+    if(c===null||c===undefined||c===false) return;
+    if(typeof c==='string'||typeof c==='number') el.appendChild(document.createTextNode(c));
+    else if(c instanceof Node) el.appendChild(c);
+    else if(Array.isArray(c)) c.forEach(function(cc){ if(cc instanceof Node) el.appendChild(cc); else if(cc!==null&&cc!==undefined&&cc!==false) el.appendChild(document.createTextNode(cc)); });
+  });
+  return el;
+}
+function div(cls, ...ch){ return h('div',{class:cls},...ch); }
+function p(cls, txt){ var el=document.createElement('p'); el.className=cls; el.textContent=txt; return el; }
+function span(cls, txt){ var el=document.createElement('span'); el.className=cls; el.textContent=txt; return el; }
+function strong(txt){ var el=document.createElement('strong'); el.textContent=txt; return el; }
+function bdg(type, txt){ return h('span',{class:'bdg bdg-'+type},txt); }
+function trRow(label, val){ return div('tr', span('',label), span('',val)); }
+
+function field(id, lbl, type, ph, val){
+  var wrap = document.createElement('div');
+  var label = document.createElement('label'); label.className='lbl'; label.textContent=lbl;
+  var input;
+  if(type==='textarea'){ input=document.createElement('textarea'); }
+  else if(type==='select'){ input=document.createElement('select'); }
+  else { input=document.createElement('input'); input.type=type||'text'; if(type==='decimal') input.inputMode='decimal'; if(type==='numeric') input.inputMode='numeric'; }
+  input.id=id; input.style.width='100%'; input.style.marginBottom='10px';
+  if(ph) input.placeholder=ph;
+  if(val!==undefined&&val!==null) input.value=val;
+  wrap.appendChild(label); wrap.appendChild(input);
+  return wrap;
+}
+
+function btn(txt, cls, onclick){ var b=document.createElement('button'); b.className=cls||'btn'; b.textContent=txt; b.addEventListener('click',onclick); return b; }
+function getVal(id){ var el=document.getElementById(id); return el?el.value:''; }
+
+// ─── VIEWS ────────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  var activas = state.F.filter(function(f){return f.estado==='activa';}).length;
+  var enProc = state.D.filter(function(d){return d.estado==='en_proceso';}).length;
+  var ultF = state.F.slice().sort(function(a,b){return b.numero-a.numero;}).slice(0,4);
+  var ultD = state.D.slice().sort(function(a,b){return b.numero-a.numero;}).slice(0,4);
+
+  var statsDiv = div('g2');
+  [['Ferment. activas',activas,true],['Destil. en curso',enProc,true],['Total ferment.',state.F.length,false],['Total destil.',state.D.length,false]].forEach(function(it){
+    var s2=div('stat'); var v=document.createElement('span'); v.className='stat-val'; v.style.color=it[2]&&it[0]!=='Total ferment.'&&it[0]!=='Total destil.'?'var(--ac)':'var(--text)'; v.textContent=it[1]; var l=document.createElement('span'); l.className='stat-lbl'; l.textContent=it[0]; s2.appendChild(v); s2.appendChild(l); statsDiv.appendChild(s2);
+  });
+  var sec = div('sec');
+  sec.appendChild(statsDiv);
+  state.F.filter(function(f){return f.estado==='activa';}).forEach(function(f){
+    var card = div('card accent'); card.style.cursor='pointer';
+    var row = div('card-row'); row.appendChild(div('',strong('Fermentación #'+f.numero), p('muted',fmtDate(f.fechaInicio)))); row.appendChild(bdg('amber','Activa'));
+    card.appendChild(row); card.addEventListener('click',function(){go('fermentacion','detail',f);}); sec.appendChild(card);
+  });
+  if(ultF.length){ var h2f=document.createElement('h2'); h2f.textContent='Últimas fermentaciones'; h2f.style.marginTop='12px'; sec.appendChild(h2f); }
+  ultF.forEach(function(f){
+    var card=div('card'); card.style.cursor='pointer';
+    var row=div('card-row'); row.appendChild(span('','#'+f.numero+' · '+fmtDate(f.fechaInicio))); row.appendChild(bdg(f.estado==='activa'?'amber':'green',f.estado==='activa'?'Activa':'Lista'));
+    card.appendChild(row); card.addEventListener('click',function(){go('fermentacion','detail',f);}); sec.appendChild(card);
+  });
+  if(ultD.length){ var h2d=document.createElement('h2'); h2d.textContent='Últimas destilaciones'; h2d.style.marginTop='14px'; sec.appendChild(h2d); }
+  ultD.forEach(function(d){
+    var cor=(d.fracciones||[]).filter(function(f){return f.tipo==='corazones';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+    var card=div('card'); card.style.cursor='pointer';
+    var row=div('card-row');
+    var info=document.createElement('div'); info.appendChild(span('','#'+d.numero+' · '+fmtDate(d.fecha))); if(cor>0){ var pp=document.createElement('p'); pp.className='muted'; pp.textContent=(cor/1000).toFixed(2)+'L corazones'; info.appendChild(pp); }
+    row.appendChild(info); row.appendChild(bdg(d.estado==='en_proceso'?'amber':'green',d.estado==='en_proceso'?'En proceso':'Finalizada'));
+    card.appendChild(row); card.addEventListener('click',function(){go('destilacion','detail',d);}); sec.appendChild(card);
+  });
+  return sec;
+}
+
+function renderFermList(){
+  var sec=div('sec');
+  sec.appendChild(btn('+ Nueva fermentación','btn',function(){go('fermentacion','form',null);}));
+  var sp=document.createElement('div'); sp.style.height='12px'; sec.appendChild(sp);
+  var sorted=state.F.slice().sort(function(a,b){return b.numero-a.numero;});
+  if(!sorted.length){ sec.appendChild(p('muted','Sin registros aún.')); }
+  sorted.forEach(function(f){
+    var card=div('card'); card.style.cursor='pointer';
+    var row=div('card-row');
+    var info=document.createElement('div'); info.appendChild(strong('Fermentación #'+f.numero)); info.appendChild(p('muted',fmtDate(f.fechaInicio)+' · '+(f.volumenAgua||'—')+'L'));
+    row.appendChild(info); row.appendChild(bdg(f.estado==='activa'?'amber':'green',f.estado==='activa'?'Activa':'Finalizada'));
+    card.appendChild(row); card.addEventListener('click',function(){go('fermentacion','detail',f);}); sec.appendChild(card);
+  });
+  return sec;
+}
+
+function renderFermForm(){
+  var nextNum = state.F.length>0 ? Math.max.apply(null,state.F.map(function(f){return parseInt(f.numero)||0;}))+1 : 51;
+  var sec=div('sec');
+  var h2=document.createElement('h2'); h2.textContent='Nueva fermentación'; sec.appendChild(h2);
+  var g1=div('g2'); g1.appendChild(field('f_num','N° fermentación','numeric','',nextNum)); g1.appendChild(field('f_fecha','Fecha inicio','date','',today())); sec.appendChild(g1);
+  var h3a=document.createElement('h3'); h3a.textContent='Materia prima'; sec.appendChild(h3a);
+  var g2=div('g2');
+  [['f_panela','Panela (kg)','decimal','22'],['f_agua','Agua (litros)','decimal','120'],['f_levadura','Levadura (g)','decimal','55'],['f_levTipo','Tipo levadura','text','','C-40'],['f_fosfato','Fosfato diamonio (g)','decimal','60'],['f_sulfMag','Sulfato magnesio (g)','decimal','8'],['f_sulfCal','Sulfato calcio (g)','decimal','15'],['f_acidoCit','Ácido cítrico (g)','decimal','100']].forEach(function(it){ g2.appendChild(field(it[0],it[1],it[2],it[3],it[4])); });
+  sec.appendChild(g2);
+  var h3b=document.createElement('h3'); h3b.textContent='Cocción'; sec.appendChild(h3b);
+  var g3=div('g2'); [['f_horaCoc','Hora inicio cocción','time'],['f_horaHerv','Hora inicio hervor','time'],['f_durHerv','Duración hervor (min)','numeric','20','20']].forEach(function(it){ g3.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sec.appendChild(g3);
+  var h3c=document.createElement('h3'); h3c.textContent='Parámetros iniciales'; sec.appendChild(h3c);
+  var g4=div('g2'); [['f_brix','°Brix inicial','decimal','15'],['f_dens','Densidad inicial','decimal','','1.060'],['f_phIni','pH inicial','decimal','5.2'],['f_phAdj','pH ajustado','decimal','4.3'],['f_temp','Temp. inoculación (°C)','decimal','28.2']].forEach(function(it){ g4.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sec.appendChild(g4);
+  sec.appendChild(field('f_obs','Observaciones iniciales','textarea','Notas sobre el mosto, condiciones...'));
+  sec.appendChild(btn('Guardar fermentación','btn',function(){
+    var ferm = {id:uid(),numero:getVal('f_num'),fechaInicio:getVal('f_fecha'),estado:'activa',panela_kg:getVal('f_panela'),volumenAgua:getVal('f_agua'),levadura_g:getVal('f_levadura'),levadura_tipo:getVal('f_levTipo'),fosfatoDiamonio_g:getVal('f_fosfato'),sulfatoMagnesio_g:getVal('f_sulfMag'),sulfatoCalcio_g:getVal('f_sulfCal'),acidoCitrico_g:getVal('f_acidoCit'),horaInicioCoccion:getVal('f_horaCoc'),horaHervor:getVal('f_horaHerv'),duracionHervor_min:getVal('f_durHerv'),brixInicial:getVal('f_brix'),densidadInicial:getVal('f_dens'),phInicial:getVal('f_phIni'),phAjustado:getVal('f_phAdj'),tempInoculacion:getVal('f_temp'),observaciones:getVal('f_obs'),seguimiento:[]};
+    saveF([ferm].concat(state.F)); go('fermentacion','list');
+  }));
+  sec.appendChild(btn('Cancelar','btn-s',function(){go('fermentacion','list');}));
+  return sec;
+}
+
+function renderFermDetail(){
+  var f = state.sel;
+  var sec=div('sec');
+  var topCard=div('card accent');
+  var topRow=div('card-row'); topRow.appendChild(strong('Fermentación #'+f.numero)); topRow.appendChild(bdg(f.estado==='activa'?'amber':'green',f.estado==='activa'?'Activa':'Finalizada'));
+  topCard.appendChild(topRow);
+  var fechaArea=document.createElement('div');
+  function renderFechaInicio(){ fechaArea.innerHTML=''; var fr=div('card-row'); fr.style.marginTop='4px'; var fechaTxt=document.createElement('span'); fechaTxt.className='muted'; fechaTxt.style.fontSize='12px'; fechaTxt.textContent=fmtDate(f.fechaInicio)+(f.fechaFin?' 2192 '+fmtDate(f.fechaFin):''); var editFechaBtn=document.createElement('button'); editFechaBtn.textContent='270fFe0f'; editFechaBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:13px;padding:0 0 0 6px;'; editFechaBtn.addEventListener('click',function(){ fechaArea.innerHTML=''; var sc=div('sub-card'); sc.style.marginTop='6px'; sc.appendChild(field('fi_fecha','Fecha de inicio','date','',f.fechaInicio)); var row2=div('btn-row'); row2.appendChild(btn('Guardar','btn btn-full',function(){ f.fechaInicio=getVal('fi_fecha'); var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); renderFechaInicio(); })); row2.appendChild(btn('Cancelar','btn-s btn-full',renderFechaInicio)); sc.appendChild(row2); fechaArea.appendChild(sc); }); fr.appendChild(fechaTxt); fr.appendChild(editFechaBtn); fechaArea.appendChild(fr); }
+  renderFechaInicio();
+  topCard.appendChild(fechaArea);
+  sec.appendChild(topCard);
+  sec.appendChild(topCard);
+  var h3a=document.createElement('h3'); h3a.textContent='Materia prima'; sec.appendChild(h3a);
+  var mp=div('card'); [['Panela',(f.panela_kg||'—')+' kg'],['Agua',(f.volumenAgua||'—')+' L'],['Levadura',(f.levadura_g||'—')+' g · '+(f.levadura_tipo||'')],['Fosfato diamonio',(f.fosfatoDiamonio_g||'—')+' g'],['Sulfato magnesio',(f.sulfatoMagnesio_g||'—')+' g'],['Sulfato calcio',(f.sulfatoCalcio_g||'—')+' g'],['Ácido cítrico',(f.acidoCitrico_g||'—')+' g']].forEach(function(it){ mp.appendChild(trRow(it[0],it[1])); }); sec.appendChild(mp);
+  var h3b=document.createElement('h3'); h3b.textContent='Parámetros iniciales'; sec.appendChild(h3b);
+  var pi=div('card'); [['°Brix',f.brixInicial||'—'],['Densidad',f.densidadInicial||'—'],['pH inicial → ajustado',(f.phInicial||'—')+' → '+(f.phAjustado||'—')],['Temp. inoculación',(f.tempInoculacion||'—')+' °C']].forEach(function(it){ pi.appendChild(trRow(it[0],it[1])); }); sec.appendChild(pi);
+
+  var segContainer=document.createElement('div');
+  function renderSeguimientos(){
+    segContainer.innerHTML='';
+    if((f.seguimiento||[]).length){
+      var h3s=document.createElement('h3'); h3s.textContent='Seguimiento'; segContainer.appendChild(h3s);
+      f.seguimiento.forEach(function(sg){
+        var sc=div('card'); sc.style.padding='8px 12px';
+        var editArea=document.createElement('div');
+        function showView(){
+          editArea.innerHTML='';
+          var sr=div('card-row');
+          var left=document.createElement('div');
+          left.appendChild(strong(fmtDate(sg.fecha)+' '+sg.hora));
+          left.appendChild(p('muted','D:'+(sg.densidad||'—')+' · '+(sg.brix||'—')+'°Bx'));
+          if(sg.observacion){ left.appendChild(p('muted',sg.observacion)); }
+          sr.appendChild(left);
+          var btnWrap=document.createElement('div'); btnWrap.style.display='flex'; btnWrap.style.gap='4px'; btnWrap.style.flexShrink='0';
+          var eBtn=document.createElement('button'); eBtn.textContent='✏️'; eBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;';
+          eBtn.addEventListener('click', showEdit);
+          var dBtn=document.createElement('button'); dBtn.textContent='🗑'; dBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:15px;padding:2px 4px;';
+          dBtn.addEventListener('click',function(){
+            if(confirm('¿Eliminar este seguimiento?')){
+              f.seguimiento=f.seguimiento.filter(function(x){return x.id!==sg.id;});
+              var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); renderSeguimientos();
+            }
+          });
+          btnWrap.appendChild(eBtn); btnWrap.appendChild(dBtn); sr.appendChild(btnWrap);
+          editArea.appendChild(sr);
+        }
+        function showEdit(){
+          editArea.innerHTML='';
+          var uid_f='se_f'+sg.id, uid_h='se_h'+sg.id, uid_d='se_d'+sg.id, uid_b='se_b'+sg.id, uid_o='se_o'+sg.id;
+          var g=div('g2');
+          g.appendChild(field(uid_f,'Fecha','date','',sg.fecha));
+          g.appendChild(field(uid_h,'Hora','time','',sg.hora));
+          g.appendChild(field(uid_d,'Densidad','decimal','',sg.densidad));
+          g.appendChild(field(uid_b,'°Brix','decimal','',sg.brix));
+          editArea.appendChild(g);
+          editArea.appendChild(field(uid_o,'Observación','textarea','',sg.observacion));
+          var row2=div('btn-row');
+          row2.appendChild(btn('Guardar','btn btn-full',function(){
+            sg.fecha=document.getElementById(uid_f).value;
+            sg.hora=document.getElementById(uid_h).value;
+            sg.densidad=document.getElementById(uid_d).value;
+            sg.brix=document.getElementById(uid_b).value;
+            sg.observacion=document.getElementById(uid_o).value;
+            var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); showView();
+          }));
+          row2.appendChild(btn('Cancelar','btn-s btn-full',showView));
+          editArea.appendChild(row2);
+        }
+        showView();
+        sc.appendChild(editArea);
+        segContainer.appendChild(sc);
+      });
+    }
+  }
+  renderSeguimientos();
+  sec.appendChild(segContainer);
+
+  if(f.estado==='finalizada'&&f.densidadFinal){
+    var h3c=document.createElement('h3'); h3c.textContent='Cierre'; sec.appendChild(h3c);
+    var cc=div('card'); [['Fecha fin fermentación',fmtDate(f.fechaFin)],['Densidad final',f.densidadFinal],['°Brix final',f.brixFinal||'—'],['Duración',(f.duracionDias||'—')+' días'],['Traslado al destilador',f.fechaTraslado?fmtDate(f.fechaTraslado):'Pendiente']].forEach(function(it){ cc.appendChild(trRow(it[0],it[1])); }); sec.appendChild(cc);
+    if(!f.fechaTraslado){
+      var trasArea=document.createElement('div');
+      function makeTrasBtn(){ var tb=btn('🚰 Registrar traslado al destilador','btn-s',function(){ trasArea.innerHTML=''; var sc=div('sub-card'); var h3t=document.createElement('h3'); h3t.textContent='Traslado al destilador'; sc.appendChild(h3t); sc.appendChild(field('tr_fecha','Fecha de traslado','date','',today())); sc.appendChild(btn('Guardar traslado','btn',function(){ f.fechaTraslado=getVal('tr_fecha'); var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); go('fermentacion','detail',f); })); sc.appendChild(btn('Cancelar','btn-s',function(){ trasArea.innerHTML=''; trasArea.appendChild(makeTrasBtn()); })); trasArea.appendChild(sc); }); return tb; } trasArea.appendChild(makeTrasBtn()); sec.appendChild(trasArea);
+    }
+  }
+  var obsArea=document.createElement('div'); sec.appendChild(obsArea);
+  function renderObs(){ obsArea.innerHTML=''; var h3o=document.createElement('h3'); h3o.textContent='Observaciones'; var editObsBtn=document.createElement('button'); editObsBtn.textContent='270fFe0f'; editObsBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:13px;padding:0 0 0 6px;'; var h3row=div('card-row'); h3row.style.alignItems='center'; h3row.style.marginBottom='6px'; h3row.appendChild(h3o); h3row.appendChild(editObsBtn); obsArea.appendChild(h3row); if(f.observaciones){ obsArea.appendChild(p('card muted',f.observaciones)); } editObsBtn.addEventListener('click',function(){ obsArea.innerHTML=''; var sc=div('sub-card'); sc.appendChild(field('obs_edit','Observaciones','textarea','',f.observaciones||'')); var row2=div('btn-row'); row2.appendChild(btn('Guardar','btn btn-full',function(){ f.observaciones=getVal('obs_edit'); var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); renderObs(); })); row2.appendChild(btn('Cancelar','btn-s btn-full',renderObs)); sc.appendChild(row2); obsArea.appendChild(sc); }); }
+  renderObs();
+
+  var actArea=document.createElement('div'); actArea.id='ferm-act';
+  function renderActions(){
+    actArea.innerHTML='';
+    if(f.estado==='activa'){
+      var row=div('btn-row');
+      row.appendChild(btn('+ Seguimiento','btn-x btn-full',function(){
+        actArea.innerHTML='';
+        var sc=div('sub-card');
+        var h3t=document.createElement('h3'); h3t.textContent='Agregar seguimiento'; sc.appendChild(h3t);
+        var g=div('g2'); [['s_fecha','Fecha','date','',today()],['s_hora','Hora','time','',nowT()],['s_dens','Densidad','decimal','1.025'],['s_brix','°Brix','decimal','8']].forEach(function(it){ g.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sc.appendChild(g);
+        sc.appendChild(field('s_obs','Observación','textarea',''));
+        sc.appendChild(btn('Guardar','btn',function(){
+          var seg={id:uid(),fecha:getVal('s_fecha'),hora:getVal('s_hora'),densidad:getVal('s_dens'),brix:getVal('s_brix'),observacion:getVal('s_obs')};
+          f.seguimiento=(f.seguimiento||[]).concat([seg]);
+          var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); go('fermentacion','detail',f);
+        }));
+        sc.appendChild(btn('Cancelar','btn-s',renderActions));
+        actArea.appendChild(sc);
+      }));
+      row.appendChild(btn('✓ Finalizar','btn-green btn-full',function(){
+        actArea.innerHTML='';
+        var sc=div('sub-card'); sc.style.borderColor='#639922';
+        var h3t=document.createElement('h3'); h3t.textContent='Cerrar fermentación'; sc.appendChild(h3t);
+        var g=div('g2'); [['c_fecha','Fecha fin fermentación','date','',today()],['c_dias','Duración (días)','numeric'],['c_densF','Densidad final','decimal','','1.000'],['c_brixF','°Brix final','decimal','','0']].forEach(function(it){ g.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sc.appendChild(g);
+        sc.appendChild(field('c_obs','Observaciones finales','textarea',''));
+        var b2=btn('Marcar como finalizada','btn',function(){ f.estado='finalizada'; f.fechaFin=getVal('c_fecha'); f.duracionDias=getVal('c_dias'); f.densidadFinal=getVal('c_densF'); f.brixFinal=getVal('c_brixF'); f.observaciones=f.observaciones||(getVal('c_obs')||''); var arr=state.F.map(function(x){return x.id===f.id?f:x;}); saveF(arr); go('fermentacion','detail',f); }); b2.style.background='#3B6D11'; sc.appendChild(b2);
+        sc.appendChild(btn('Cancelar','btn-s',renderActions));
+        actArea.appendChild(sc);
+      }));
+      actArea.appendChild(row);
+    }
+  }
+  renderActions();
+  sec.appendChild(actArea);
+  var dv=document.createElement('div'); dv.className='divider'; sec.appendChild(dv);
+  var br=div('btn-row');
+  br.appendChild(btn('↓ PDF INVIMA','btn-x btn-full',function(){pdfFerm(f);}));
+  br.appendChild(btn('Eliminar','btn-danger btn-full',function(){ if(confirm('¿Eliminar este registro?')){ saveF(state.F.filter(function(x){return x.id!==f.id;})); go('fermentacion','list'); } }));
+  sec.appendChild(br);
+  return sec;
+}
+
+function renderDestList(){
+  var sec=div('sec');
+  sec.appendChild(btn('+ Nueva destilación','btn',function(){go('destilacion','form',null);}));
+  var sp=document.createElement('div'); sp.style.height='12px'; sec.appendChild(sp);
+  var sorted=state.D.slice().sort(function(a,b){return b.numero-a.numero;});
+  if(!sorted.length){ sec.appendChild(p('muted','Sin registros aún.')); }
+  sorted.forEach(function(d){
+    var cor=(d.fracciones||[]).filter(function(f){return f.tipo==='corazones';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+    var card=div('card'); card.style.cursor='pointer';
+    var row=div('card-row');
+    var info=document.createElement('div'); info.appendChild(strong('Destilación #'+d.numero)); info.appendChild(p('muted',fmtDate(d.fecha)+(cor>0?' · '+(cor/1000).toFixed(2)+'L corazones':'')));
+    row.appendChild(info); row.appendChild(bdg(d.estado==='en_proceso'?'amber':'green',d.estado==='en_proceso'?'En proceso':'Finalizada'));
+    card.appendChild(row); card.addEventListener('click',function(){go('destilacion','detail',d);}); sec.appendChild(card);
+  });
+  return sec;
+}
+
+function renderDestForm(){
+  var nextNum = state.D.length>0 ? Math.max.apply(null,state.D.map(function(d){return parseInt(d.numero)||0;}))+1 : 52;
+  var colas = [];
+  var sec=div('sec');
+  var h2=document.createElement('h2'); h2.textContent='Nueva destilación'; sec.appendChild(h2);
+  var g1=div('g2'); [['d_num','N° destilación','numeric','',nextNum],['d_fecha','Fecha','date','',today()],['d_hora','Hora inicio','time','',nowT()]].forEach(function(it){ g1.appendChild(field(it[0],it[1],it[2],it[3],it[4])); });
+  var selWrap=document.createElement('div'); var selLbl=document.createElement('label'); selLbl.className='lbl'; selLbl.textContent='Fermentación origen';
+  var selEl=document.createElement('select'); selEl.id='d_fermOrig'; selEl.style.width='100%'; selEl.style.marginBottom='10px';
+  var opt0=document.createElement('option'); opt0.value=''; opt0.textContent='Seleccionar...'; selEl.appendChild(opt0);
+  state.F.filter(function(f){return f.estado==='finalizada';}).forEach(function(f){ var o=document.createElement('option'); o.value=f.id; o.textContent='#'+f.numero+' · '+fmtDate(f.fechaInicio); selEl.appendChild(o); });
+  var optO=document.createElement('option'); optO.value='otro'; optO.textContent='Otro'; selEl.appendChild(optO);
+  selWrap.appendChild(selLbl); selWrap.appendChild(selEl); g1.appendChild(selWrap); sec.appendChild(g1);
+  var h3a=document.createElement('h3'); h3a.textContent='Condiciones iniciales'; sec.appendChild(h3a);
+  var g2=div('g2'); [['d_densM','Densidad mosto','decimal','','1.000'],['d_tCald','Temp. caldera (°C)','decimal','16'],['d_tRefr','Temp. refrigeración (°C)','decimal','16.5']].forEach(function(it){ g2.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sec.appendChild(g2);
+  var h3b=document.createElement('h3'); h3b.textContent='Colas recicladas'; sec.appendChild(h3b);
+  var colasList=document.createElement('div'); sec.appendChild(colasList);
+  function refreshColas(){ colasList.innerHTML=''; colas.forEach(function(c){ var cc=div('card'); cc.style.padding='6px 10px'; cc.style.marginBottom='6px'; cc.appendChild(span('',c.volumen_ml+' mL al '+c.abv+'%')); colasList.appendChild(cc); }); }
+  var addColaArea=document.createElement('div');
+  var addColaBtn=btn('+ Agregar cola reciclada','btn-s',function(){
+    addColaArea.innerHTML='';
+    var sc=div('sub-card');
+    var g=div('g2'); [['c_vol','Volumen (mL)','decimal','3000'],['c_abv','ABV (%)','decimal','20']].forEach(function(it){ g.appendChild(field(it[0],it[1],it[2],it[3])); }); sc.appendChild(g);
+    sc.appendChild(btn('Agregar','btn',function(){ colas.push({id:uid(),volumen_ml:getVal('c_vol'),abv:getVal('c_abv')}); refreshColas(); addColaArea.innerHTML=''; addColaArea.appendChild(addColaBtn); }));
+    sc.appendChild(btn('Cancelar','btn-s',function(){ addColaArea.innerHTML=''; addColaArea.appendChild(addColaBtn); }));
+    addColaArea.appendChild(sc);
+  });
+  addColaBtn.style.marginTop='0'; addColaArea.appendChild(addColaBtn); sec.appendChild(addColaArea);
+  var h3c=document.createElement('h3'); h3c.textContent='Insumos especiales'; sec.appendChild(h3c);
+  sec.appendChild(field('d_insumos','','text','Ej: 90g café orgánico San Rafael en canasta'));
+  sec.appendChild(btn('Iniciar destilación','btn',function(){
+    var dest={id:uid(),numero:getVal('d_num'),fecha:getVal('d_fecha'),horaInicio:getVal('d_hora'),estado:'en_proceso',fermentacionOrigen:getVal('d_fermOrig'),densidadMostoInicial:getVal('d_densM'),tempCaldera:getVal('d_tCald'),tempRefrigeracion:getVal('d_tRefr'),colasRecicladas:colas,insumosEspeciales:getVal('d_insumos'),fracciones:[],intervenciones:[],observaciones:''};
+    saveD([dest].concat(state.D)); go('destilacion','list');
+  }));
+  sec.appendChild(btn('Cancelar','btn-s',function(){go('destilacion','list');}));
+  return sec;
+}
+
+function renderDestDetail(){
+  var d = state.sel;
+  var sec=div('sec');
+  var topCard=div('card accent');
+  var topRow=div('card-row'); topRow.appendChild(strong('Destilación #'+d.numero)); topRow.appendChild(bdg(d.estado==='en_proceso'?'amber':'green',d.estado==='en_proceso'?'En proceso':'Finalizada'));
+  topCard.appendChild(topRow); topCard.appendChild(p('muted',fmtDate(d.fecha)+(d.horaInicio?' · '+d.horaInicio:'')));
+  sec.appendChild(topCard);
+  var h3a=document.createElement('h3'); h3a.textContent='Condiciones iniciales'; sec.appendChild(h3a);
+  var ci=div('card'); [['Densidad mosto',d.densidadMostoInicial||'—'],['Temp. caldera',(d.tempCaldera||'—')+' °C'],['Temp. refrigeración',(d.tempRefrigeracion||'—')+' °C']].forEach(function(it){ ci.appendChild(trRow(it[0],it[1])); }); sec.appendChild(ci);
+  if((d.colasRecicladas||[]).length){
+    var h3cr=document.createElement('h3'); h3cr.textContent='Colas recicladas'; sec.appendChild(h3cr);
+    d.colasRecicladas.forEach(function(c){ var cc=div('card'); cc.style.padding='6px 10px'; cc.style.marginBottom='6px'; cc.appendChild(span('',c.volumen_ml+' mL al '+c.abv+'%')); sec.appendChild(cc); });
+  }
+  if(d.insumosEspeciales){ var h3ie=document.createElement('h3'); h3ie.textContent='Insumos especiales'; sec.appendChild(h3ie); sec.appendChild(p('card muted',d.insumosEspeciales)); }
+  var fracs=d.fracciones||[];
+  if(fracs.length){
+    var h3fr=document.createElement('h3'); h3fr.textContent='Fracciones recolectadas'; sec.appendChild(h3fr);
+    var cab=fracs.filter(function(f){return f.tipo==='cabezas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+    var cor=fracs.filter(function(f){return f.tipo==='corazones';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+    var col=fracs.filter(function(f){return f.tipo==='colas';}).reduce(function(a,f){return a+(parseFloat(f.volumen_ml)||0);},0);
+    var sumCard=div('card g2'); sumCard.style.display='grid';
+    [['Cabezas',cab,'red'],['Corazones',cor,'green'],['Colas',col,'amber']].forEach(function(it){ var s=div('stat'); var v=document.createElement('span'); v.className='stat-val'; v.style.fontSize='16px'; v.textContent=(it[1]/1000).toFixed(2)+'L'; var l=document.createElement('span'); l.className='stat-lbl'; l.textContent=it[0]; s.appendChild(v); s.appendChild(l); sumCard.appendChild(s); }); sec.appendChild(sumCard);
+    fracs.forEach(function(fr){
+      var tl={cabezas:'Cabezas',corazones:'Corazones',colas:'Colas'};
+      var fc=div('card'); fc.style.padding='8px 12px'; fc.style.marginBottom='6px';
+      var fr2=div('card-row'); fr2.appendChild(span('bdg bdg-'+( fr.tipo==='cabezas'?'red':fr.tipo==='corazones'?'green':'amber'),tl[fr.tipo]||fr.tipo)); fr2.appendChild(span('',fr.hora||''));
+      fc.appendChild(fr2);
+      var fd2=document.createElement('div'); fd2.style.fontSize='12px'; fd2.style.color='var(--muted)'; fd2.style.marginTop='4px';
+      fd2.textContent=fr.volumen_ml+'mL · '+fr.abv+'% ABV · Cal:'+(fr.tempCaldera||'—')+'°C · Ref:'+(fr.tempRefrigeracion||'—')+'°C';
+      fc.appendChild(fd2);
+      if(fr.notas){ var fn=document.createElement('p'); fn.style.fontSize='12px'; fn.style.marginTop='2px'; fn.style.fontStyle='italic'; fn.textContent=fr.notas; fc.appendChild(fn); }
+      sec.appendChild(fc);
+    });
+  }
+  if((d.intervenciones||[]).length){
+    var h3iv=document.createElement('h3'); h3iv.textContent='Intervenciones'; sec.appendChild(h3iv);
+    d.intervenciones.forEach(function(iv){ var ic=div('card'); ic.style.padding='8px 12px'; ic.style.marginBottom='6px'; ic.appendChild(span('muted',iv.hora+' · ')); ic.appendChild(document.createTextNode(iv.descripcion)); sec.appendChild(ic); });
+  }
+  if(d.eficiencia){ var h3ef=document.createElement('h3'); h3ef.textContent='Cierre'; sec.appendChild(h3ef); var efc=div('card'); efc.appendChild(trRow('Eficiencia',d.eficiencia+'%')); sec.appendChild(efc); }
+  if(d.observaciones){ var h3ob=document.createElement('h3'); h3ob.textContent='Observaciones'; sec.appendChild(h3ob); sec.appendChild(p('card muted',d.observaciones)); }
+
+  var actArea=document.createElement('div'); actArea.id='dest-act';
+  function renderActs(){
+    actArea.innerHTML='';
+    if(d.estado==='en_proceso'){
+      var row=div('btn-row');
+      row.appendChild(btn('+ Fracción','btn-x btn-full',function(){
+        actArea.innerHTML='';
+        var sc=div('sub-card');
+        var h3t=document.createElement('h3'); h3t.textContent='Agregar fracción'; sc.appendChild(h3t);
+        var tLbl=document.createElement('label'); tLbl.className='lbl'; tLbl.textContent='Tipo';
+        var tSel=document.createElement('select'); tSel.id='fr_tipo'; tSel.style.width='100%'; tSel.style.marginBottom='10px';
+        [['cabezas','Cabezas'],['corazones','Corazones'],['colas','Colas']].forEach(function(it){ var o=document.createElement('option'); o.value=it[0]; o.textContent=it[1]; tSel.appendChild(o); }); tSel.value='corazones';
+        sc.appendChild(tLbl); sc.appendChild(tSel);
+        var g=div('g2'); [['fr_hora','Hora','time','',nowT()],['fr_vol','Volumen (mL)','decimal','4000'],['fr_abv','ABV (%)','decimal','67'],['fr_tCald','Temp. caldera (°C)','decimal','85'],['fr_tRefr','Temp. refrig. (°C)','decimal','20']].forEach(function(it){ g.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sc.appendChild(g);
+        sc.appendChild(field('fr_notas','Notas organolépticas','text','Aroma, carácter, observaciones...'));
+        sc.appendChild(btn('Guardar fracción','btn',function(){
+          var frac={id:uid(),tipo:getVal('fr_tipo'),hora:getVal('fr_hora'),volumen_ml:getVal('fr_vol'),abv:getVal('fr_abv'),tempCaldera:getVal('fr_tCald'),tempRefrigeracion:getVal('fr_tRefr'),notas:getVal('fr_notas')};
+          d.fracciones=(d.fracciones||[]).concat([frac]);
+          var arr=state.D.map(function(x){return x.id===d.id?d:x;}); saveD(arr); go('destilacion','detail',d);
+        }));
+        sc.appendChild(btn('Cancelar','btn-s',renderActs));
+        actArea.appendChild(sc);
+      }));
+      row.appendChild(btn('+ Intervención','btn-x btn-full',function(){
+        actArea.innerHTML='';
+        var sc=div('sub-card');
+        var h3t=document.createElement('h3'); h3t.textContent='Agregar intervención'; sc.appendChild(h3t);
+        sc.appendChild(field('iv_hora','Hora','time','',nowT()));
+        sc.appendChild(field('iv_desc','Descripción','textarea','Ej: Recambio 30% agua refrigeración...'));
+        sc.appendChild(btn('Guardar','btn',function(){
+          var iv={id:uid(),hora:getVal('iv_hora'),descripcion:getVal('iv_desc')};
+          d.intervenciones=(d.intervenciones||[]).concat([iv]);
+          var arr=state.D.map(function(x){return x.id===d.id?d:x;}); saveD(arr); go('destilacion','detail',d);
+        }));
+        sc.appendChild(btn('Cancelar','btn-s',renderActs));
+        actArea.appendChild(sc);
+      }));
+      actArea.appendChild(row);
+      var bFin=btn('✓ Finalizar destilación','btn-green',function(){
+        actArea.innerHTML='';
+        var sc=div('sub-card'); sc.style.borderColor='#639922';
+        var h3t=document.createElement('h3'); h3t.textContent='Cerrar destilación'; h3t.style.color='#3B6D11'; sc.appendChild(h3t);
+        sc.appendChild(field('cl_ef','Eficiencia (%)','decimal','79.5'));
+        sc.appendChild(field('cl_obs','Observaciones finales','textarea',''));
+        var b2=btn('Finalizar destilación','btn',function(){ d.estado='finalizada'; d.eficiencia=getVal('cl_ef'); d.observaciones=getVal('cl_obs'); var arr=state.D.map(function(x){return x.id===d.id?d:x;}); saveD(arr); go('destilacion','detail',d); }); b2.style.background='#3B6D11'; sc.appendChild(b2);
+        sc.appendChild(btn('Cancelar','btn-s',renderActs));
+        actArea.appendChild(sc);
+      });
+      bFin.style.width='100%'; bFin.style.marginTop='8px'; actArea.appendChild(bFin);
+    }
+  }
+  renderActs(); sec.appendChild(actArea);
+  var dv=document.createElement('div'); dv.className='divider'; sec.appendChild(dv);
+  var br=div('btn-row');
+  br.appendChild(btn('↓ PDF INVIMA','btn-x btn-full',function(){pdfDest(d);}));
+  br.appendChild(btn('Eliminar','btn-danger btn-full',function(){ if(confirm('¿Eliminar?')){ saveD(state.D.filter(function(x){return x.id!==d.id;})); go('destilacion','list'); } }));
+  sec.appendChild(br);
+  return sec;
+}
+
+const EQUIPOS = ['Destilador','Fermentador','Mangueras','Bomba','Utensilios','Taller','Condensador','Tanque refrig.'];
+var sanEquipos = [];
+
+function renderSanList(){
+  var sec=div('sec');
+  sec.appendChild(btn('+ Nuevo registro de saneamiento','btn',function(){go('saneamiento','form',null);}));
+  var sp=document.createElement('div'); sp.style.height='12px'; sec.appendChild(sp);
+  var tl={lavado:'Lavado',desinfeccion:'Desinfección',ambos:'Lavado + Desinfección'};
+  var sorted=state.S.slice().sort(function(a,b){return b.fecha>a.fecha?1:-1;});
+  if(!sorted.length){ sec.appendChild(p('muted','Sin registros aún.')); }
+  sorted.forEach(function(r){
+    var card=div('card'); card.style.cursor='pointer';
+    var row=div('card-row');
+    var info=document.createElement('div'); info.appendChild(strong(fmtDate(r.fecha)+' · '+r.hora)); info.appendChild(p('muted',(tl[r.tipo]||r.tipo)+' · '+(r.equipos||[]).join(', ')));
+    row.appendChild(info); row.appendChild(bdg('green','✓'));
+    card.appendChild(row); card.addEventListener('click',function(){go('saneamiento','detail',r);}); sec.appendChild(card);
+  });
+  return sec;
+}
+
+function renderSanForm(){
+  sanEquipos = [];
+  var sec=div('sec');
+  var h2=document.createElement('h2'); h2.textContent='Registro de saneamiento'; sec.appendChild(h2);
+  var g1=div('g2'); g1.appendChild(field('s_fecha','Fecha','date','',today())); g1.appendChild(field('s_hora','Hora','time','',nowT())); sec.appendChild(g1);
+  var tipoLbl=document.createElement('label'); tipoLbl.className='lbl'; tipoLbl.textContent='Tipo de operación';
+  var tipoSel=document.createElement('select'); tipoSel.id='s_tipo'; tipoSel.style.width='100%'; tipoSel.style.marginBottom='12px';
+  [['ambos','Lavado + Desinfección'],['lavado','Lavado'],['desinfeccion','Desinfección']].forEach(function(it){ var o=document.createElement('option'); o.value=it[0]; o.textContent=it[1]; tipoSel.appendChild(o); });
+  sec.appendChild(tipoLbl); sec.appendChild(tipoSel);
+  var eqLbl=document.createElement('label'); eqLbl.className='lbl'; eqLbl.textContent='Equipos y áreas'; sec.appendChild(eqLbl);
+  var chips=div('chips');
+  EQUIPOS.forEach(function(eq){
+    var chip=document.createElement('button'); chip.className='chip'; chip.type='button'; chip.textContent=eq;
+    chip.addEventListener('click',function(){
+      if(sanEquipos.includes(eq)){ sanEquipos=sanEquipos.filter(function(e){return e!==eq;}); chip.classList.remove('on'); }
+      else { sanEquipos.push(eq); chip.classList.add('on'); }
+    });
+    chips.appendChild(chip);
+  });
+  sec.appendChild(chips);
+  var h3a=document.createElement('h3'); h3a.textContent='Lavado'; sec.appendChild(h3a);
+  var g2=div('g2'); [['s_det','Detergente','text','','Detergente neutro industrial'],['s_conDet','Concentración','text','','300ml / 6L agua'],['s_volDet','Volumen solución (mL)','decimal','','6000']].forEach(function(it){ g2.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sec.appendChild(g2);
+  var h3b=document.createElement('h3'); h3b.textContent='Desinfección'; sec.appendChild(h3b);
+  var g3=div('g2'); [['s_desf','Desinfectante','text','','Ácido peracético 8%'],['s_conDesf','Dilución','text','','5ml/L agua'],['s_volDesf','Volumen (mL)','decimal','','500'],['s_tCont','Tiempo contacto (min)','numeric','','10']].forEach(function(it){ g3.appendChild(field(it[0],it[1],it[2],it[3],it[4])); }); sec.appendChild(g3);
+  sec.appendChild(field('s_resp','Responsable','text','Nombre'));
+  var vLbl=document.createElement('label'); vLbl.className='lbl'; vLbl.textContent='Vinculado a proceso';
+  var vSel=document.createElement('select'); vSel.id='s_vinc'; vSel.style.width='100%'; vSel.style.marginBottom='12px';
+  var vOpt0=document.createElement('option'); vOpt0.value=''; vOpt0.textContent='Sin vincular'; vSel.appendChild(vOpt0);
+  state.F.forEach(function(f){ var o=document.createElement('option'); o.value='ferm:'+f.id; o.textContent='Fermentación #'+f.numero; vSel.appendChild(o); });
+  state.D.forEach(function(d){ var o=document.createElement('option'); o.value='dest:'+d.id; o.textContent='Destilación #'+d.numero; vSel.appendChild(o); });
+  sec.appendChild(vLbl); sec.appendChild(vSel);
+  sec.appendChild(field('s_obs','Observaciones','textarea',''));
+  sec.appendChild(btn('Guardar saneamiento','btn',function(){
+    var tipo=getVal('s_tipo');
+    var san={id:uid(),fecha:getVal('s_fecha'),hora:getVal('s_hora'),tipo:tipo,equipos:sanEquipos.slice(),
+      detergente:getVal('s_det'),concentracionDetergente:getVal('s_conDet'),volumenDetergente:getVal('s_volDet'),
+      desinfectante:getVal('s_desf'),concentracionDesinfectante:getVal('s_conDesf'),volumenDesinfectante:getVal('s_volDesf'),
+      tiempoContacto_min:getVal('s_tCont'),responsable:getVal('s_resp'),observaciones:getVal('s_obs'),vinculadoA:getVal('s_vinc')};
+    saveS([san].concat(state.S)); go('saneamiento','list');
+  }));
+  sec.appendChild(btn('Cancelar','btn-s',function(){go('saneamiento','list');}));
+  return sec;
+}
+
+function renderSanDetail(){
+  var s=state.sel;
+  var tl={lavado:'Lavado',desinfeccion:'Desinfección',ambos:'Lavado + Desinfección'};
+  var sec=div('sec');
+  var topCard=div('card green');
+  topCard.appendChild(strong((tl[s.tipo]||s.tipo)));
+  topCard.appendChild(p('muted',fmtDate(s.fecha)+' · '+s.hora));
+  sec.appendChild(topCard);
+  var h3e=document.createElement('h3'); h3e.textContent='Equipos y áreas'; sec.appendChild(h3e);
+  var chips2=div('chips'); (s.equipos||[]).forEach(function(eq){ var c=span('bdg bdg-green',eq); chips2.appendChild(c); }); sec.appendChild(chips2);
+  if(s.detergente){
+    var h3l=document.createElement('h3'); h3l.textContent='Lavado'; sec.appendChild(h3l);
+    var lc=div('card'); [['Detergente',s.detergente],['Concentración',s.concentracionDetergente||'—'],['Volumen',(s.volumenDetergente||'—')+' mL']].forEach(function(it){ lc.appendChild(trRow(it[0],it[1])); }); sec.appendChild(lc);
+  }
+  if(s.desinfectante){
+    var h3d=document.createElement('h3'); h3d.textContent='Desinfección'; sec.appendChild(h3d);
+    var dc=div('card'); [['Desinfectante',s.desinfectante],['Dilución',s.concentracionDesinfectante||'—'],['Volumen',(s.volumenDesinfectante||'—')+' mL'],['Tiempo contacto',(s.tiempoContacto_min||'—')+' min']].forEach(function(it){ dc.appendChild(trRow(it[0],it[1])); }); sec.appendChild(dc);
+  }
+  if(s.responsable){ var h3rs=document.createElement('h3'); h3rs.textContent='Responsable'; sec.appendChild(h3rs); sec.appendChild(p('card muted',s.responsable)); }
+  if(s.observaciones){ var h3ob=document.createElement('h3'); h3ob.textContent='Observaciones'; sec.appendChild(h3ob); sec.appendChild(p('card muted',s.observaciones)); }
+  var dv=document.createElement('div'); dv.className='divider'; sec.appendChild(dv);
+  var br=div('btn-row');
+  br.appendChild(btn('↓ PDF INVIMA','btn-x btn-full',function(){pdfSan(s);}));
+  br.appendChild(btn('Eliminar','btn-danger btn-full',function(){ if(confirm('¿Eliminar?')){ saveS(state.S.filter(function(x){return x.id!==s.id;})); go('saneamiento','list'); } }));
+  sec.appendChild(br);
+  return sec;
+}
+
+function renderDatos(){
+  var sec=div('sec');
+  var h2s=document.createElement('h2'); h2s.textContent='Resumen'; sec.appendChild(h2s);
+  var g=div('g2');
+  [['Fermentaciones',state.F.length],['Destilaciones',state.D.length],['Saneamientos',state.S.length],['Total registros',state.F.length+state.D.length+state.S.length]].forEach(function(it){
+    var st=div('stat'); var v=document.createElement('span'); v.className='stat-val'; v.textContent=it[1]; var l=document.createElement('span'); l.className='stat-lbl'; l.textContent=it[0]; st.appendChild(v); st.appendChild(l); g.appendChild(st);
+  });
+  sec.appendChild(g);
+
+  // Firebase status card
+  var fc=div('card'); fc.style.borderLeft='3px solid #639922'; fc.style.marginTop='10px';
+  var frow=div('card-row');
+  var finfo=document.createElement('div'); finfo.appendChild(strong('Firebase · Sincronizado')); finfo.appendChild(p('muted','Los datos se guardan automáticamente en la nube'));
+  var fdot=document.createElement('span'); fdot.textContent='●'; fdot.style.color='#639922'; fdot.style.fontSize='18px';
+  frow.appendChild(finfo); frow.appendChild(fdot); fc.appendChild(frow); sec.appendChild(fc);
+
+  var dv=document.createElement('div'); dv.className='divider'; sec.appendChild(dv);
+  var h2e=document.createElement('h2'); h2e.textContent='Exportar'; sec.appendChild(h2e);
+  var ec=div('card'); ec.appendChild(strong('Excel (.xlsx)')); ec.appendChild(p('muted','Fermentaciones, destilaciones y saneamiento en hojas separadas')); ec.style.paddingBottom='6px';
+  var eb=btn('↓ Exportar Excel','btn',exportExcel); sec.appendChild(ec); ec.appendChild(eb);
+  var dv2=document.createElement('div'); dv2.className='divider'; sec.appendChild(dv2);
+  var h2b=document.createElement('h2'); h2b.textContent='Respaldo local (opcional)'; sec.appendChild(h2b);
+  var bc=div('card'); bc.appendChild(strong('Exportar respaldo (JSON)')); bc.appendChild(p('muted','Copia de seguridad adicional. Firebase ya guarda todo automáticamente.')); bc.style.paddingBottom='6px'; bc.appendChild(btn('↓ Descargar respaldo','btn',exportBackup)); sec.appendChild(bc);
+  var ic=div('card'); ic.appendChild(strong('Importar respaldo')); ic.appendChild(p('muted','Restaura datos desde un archivo JSON previo.')); ic.style.paddingBottom='6px';
+  var iLbl=document.createElement('label'); iLbl.className='btn'; iLbl.style.display='block'; iLbl.style.textAlign='center'; iLbl.style.cursor='pointer'; iLbl.style.marginTop='6px'; iLbl.textContent='↑ Seleccionar archivo';
+  var iFile=document.createElement('input'); iFile.type='file'; iFile.accept='.json'; iFile.style.display='none'; iFile.addEventListener('change',importBackup); iLbl.appendChild(iFile); ic.appendChild(iLbl); sec.appendChild(ic);
+  return sec;
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────────────
+function render(){
+  var app = document.getElementById('app');
+  app.innerHTML = '';
+
+  var hdr = document.createElement('div'); hdr.className='hdr';
+  var showBack = state.view!=='list' && state.tab!=='dashboard' && state.tab!=='datos';
+  if(showBack){
+    var backBtn=document.createElement('button'); backBtn.className='hdr-back'; backBtn.textContent='‹';
+    backBtn.addEventListener('click',function(){state.view='list';state.sel=null;render();});
+    hdr.appendChild(backBtn);
+  }
+  var hdrText=document.createElement('div');
+  var titles={dashboard:'Destilería',fermentacion:'Fermentación',destilacion:'Destilación',saneamiento:'Saneamiento',datos:'Datos'};
+  var ht=document.createElement('div'); ht.className='hdr-title'; ht.textContent=titles[state.tab];
+  var hs=document.createElement('div'); hs.className='hdr-sub'; hs.textContent='Ron de panela · Subachoque';
+  hdrText.appendChild(ht); hdrText.appendChild(hs); hdr.appendChild(hdrText);
+
+  // Sync dot
+  var dot=document.createElement('span'); dot.id='sync-dot'; dot.className='sync-dot';
+  dot.textContent='●'; dot.style.color='#639922'; dot.title='Sincronizado con Firebase';
+  hdr.appendChild(dot);
+  app.appendChild(hdr);
+
+  var views={
+    'dashboard:list': renderDashboard,
+    'fermentacion:list': renderFermList,
+    'fermentacion:form': renderFermForm,
+    'fermentacion:detail': renderFermDetail,
+    'destilacion:list': renderDestList,
+    'destilacion:form': renderDestForm,
+    'destilacion:detail': renderDestDetail,
+    'saneamiento:list': renderSanList,
+    'saneamiento:form': renderSanForm,
+    'saneamiento:detail': renderSanDetail,
+    'datos:list': renderDatos,
+  };
+  var key = state.tab+':'+state.view;
+  var viewFn = views[key];
+  if(viewFn) app.appendChild(viewFn());
+
+  var nav=document.createElement('nav'); nav.className='nav';
+  [['dashboard','⌂','Inicio'],['fermentacion','⚗','Ferment.'],['destilacion','🏭','Destil.'],['saneamiento','✓','Saneam.'],['datos','☁','Datos']].forEach(function(t){
+    var b=document.createElement('button'); b.className='nav-btn'+(state.tab===t[0]?' active':'');
+    var ic=document.createElement('span'); ic.className='nav-icon'; ic.textContent=t[1];
+    var lb=document.createElement('span'); lb.textContent=t[2];
+    b.appendChild(ic); b.appendChild(lb);
+    b.addEventListener('click',function(){state.tab=t[0];state.view='list';state.sel=null;render();});
+    nav.appendChild(b);
+  });
+  app.appendChild(nav);
+}
+
+// ─── STARTUP ──────────────────────────────────────────────────────────────────
+loadAll().then(function(){
+  render();
+}).catch(function(err){
+  document.getElementById('app').innerHTML =
+    '<div style="padding:24px;color:#A32D2D;text-align:center">'
+    +'<p style="font-size:16px;font-weight:600;margin-bottom:8px">Error de conexión</p>'
+    +'<p style="font-size:13px;color:#666">'+err.message+'</p>'
+    +'<button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#BA7517;color:#fff;border:none;border-radius:8px;cursor:pointer">Reintentar</button>'
+    +'</div>';
+});
+</script>
+</body>
+</html>
