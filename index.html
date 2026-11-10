@@ -182,22 +182,34 @@ function renderFermList(){
   return sec;
 }
 
+// Valor para un campo: en edicion, el del registro; en uno nuevo, el valor por defecto.
+function ev(rec,key,def){if(rec)return rec[key]!==undefined&&rec[key]!==null?rec[key]:'';return def;}
+
 function renderFermForm(){
+  var rec=state.sel;
   var nextNum=state.F.length>0?Math.max.apply(null,state.F.map(function(f){return parseInt(f.numero)||0;}))+1:51;
   var sec=div('sec');
-  sec.appendChild(el('h2','','Nueva fermentacion'));
-  var g1=div('g2');g1.appendChild(field('f_num','N fermentacion','numeric','',nextNum));g1.appendChild(field('f_fecha','Fecha inicio','date','',today()));sec.appendChild(g1);
+  sec.appendChild(el('h2','',rec?'Editar fermentacion #'+rec.numero:'Nueva fermentacion'));
+  var g1=div('g2');g1.appendChild(field('f_num','N fermentacion','numeric','',ev(rec,'numero',nextNum)));g1.appendChild(field('f_fecha','Fecha inicio','date','',ev(rec,'fechaInicio',today())));sec.appendChild(g1);
   sec.appendChild(el('h3','','Materia prima'));
   var g2=div('g2');
-  [['f_panela','Panela (kg)','decimal','22'],['f_agua','Agua (litros)','decimal','120'],['f_levadura','Levadura (g)','decimal','55'],['f_levTipo','Tipo levadura','text','','C-40'],['f_fosfato','Fosfato diamonio (g)','decimal','60'],['f_sulfMag','Sulfato magnesio (g)','decimal','8'],['f_sulfCal','Sulfato calcio (g)','decimal','15'],['f_acidoCit','Acido citrico (g)','decimal','100']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});
+  [['f_panela','Panela (kg)','decimal','22',undefined,'panela_kg'],['f_agua','Agua (litros)','decimal','120',undefined,'volumenAgua'],['f_levadura','Levadura (g)','decimal','55',undefined,'levadura_g'],['f_levTipo','Tipo levadura','text','','C-40','levadura_tipo'],['f_fosfato','Fosfato diamonio (g)','decimal','60',undefined,'fosfatoDiamonio_g'],['f_sulfMag','Sulfato magnesio (g)','decimal','8',undefined,'sulfatoMagnesio_g'],['f_sulfCal','Sulfato calcio (g)','decimal','15',undefined,'sulfatoCalcio_g'],['f_acidoCit','Acido citrico (g)','decimal','100',undefined,'acidoCitrico_g']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});
   sec.appendChild(g2);
   sec.appendChild(el('h3','','Coccion'));
-  var g3=div('g2');[['f_horaCoc','Hora inicio coccion','time'],['f_horaHerv','Hora inicio hervor','time'],['f_durHerv','Duracion hervor (min)','numeric','20','20']].forEach(function(it){g3.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});sec.appendChild(g3);
+  var g3=div('g2');[['f_horaCoc','Hora inicio coccion','time',undefined,undefined,'horaInicioCoccion'],['f_horaHerv','Hora inicio hervor','time',undefined,undefined,'horaHervor'],['f_durHerv','Duracion hervor (min)','numeric','20','20','duracionHervor_min']].forEach(function(it){g3.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});sec.appendChild(g3);
   sec.appendChild(el('h3','','Parametros iniciales'));
-  var g4=div('g2');[['f_brix','Brix inicial','decimal','15'],['f_dens','Densidad inicial','decimal','','1.060'],['f_phIni','pH inicial','decimal','5.2'],['f_phAdj','pH ajustado','decimal','4.3'],['f_temp','Temp inoculacion (C)','decimal','28.2']].forEach(function(it){g4.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});sec.appendChild(g4);
-  sec.appendChild(field('f_obs','Observaciones iniciales','textarea','Notas sobre el mosto...'));
-  sec.appendChild(btn('Guardar fermentacion','btn',function(){var ferm={id:uid(),numero:getVal('f_num'),fechaInicio:getVal('f_fecha'),estado:'activa',panela_kg:getVal('f_panela'),volumenAgua:getVal('f_agua'),levadura_g:getVal('f_levadura'),levadura_tipo:getVal('f_levTipo'),fosfatoDiamonio_g:getVal('f_fosfato'),sulfatoMagnesio_g:getVal('f_sulfMag'),sulfatoCalcio_g:getVal('f_sulfCal'),acidoCitrico_g:getVal('f_acidoCit'),horaInicioCoccion:getVal('f_horaCoc'),horaHervor:getVal('f_horaHerv'),duracionHervor_min:getVal('f_durHerv'),brixInicial:getVal('f_brix'),densidadInicial:getVal('f_dens'),phInicial:getVal('f_phIni'),phAjustado:getVal('f_phAdj'),tempInoculacion:getVal('f_temp'),observaciones:getVal('f_obs'),seguimiento:[]};saveF([ferm].concat(state.F));go('fermentacion','list');}));
-  sec.appendChild(btn('Cancelar','btn-s',function(){go('fermentacion','list');}));
+  var g4=div('g2');[['f_brix','Brix inicial','decimal','15',undefined,'brixInicial'],['f_dens','Densidad inicial','decimal','','1.060','densidadInicial'],['f_phIni','pH inicial','decimal','5.2',undefined,'phInicial'],['f_phAdj','pH ajustado','decimal','4.3',undefined,'phAjustado'],['f_temp','Temp inoculacion (C)','decimal','28.2',undefined,'tempInoculacion']].forEach(function(it){g4.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});sec.appendChild(g4);
+  var cerrada=rec&&rec.estado==='finalizada';
+  if(cerrada){
+    sec.appendChild(el('h3','','Cierre'));
+    var g5=div('g2');[['f_fin','Fecha fin','date','fechaFin'],['f_dias','Duracion (dias)','numeric','duracionDias'],['f_dfin','Densidad final','decimal','densidadFinal'],['f_bfin','Brix final','decimal','brixFinal'],['f_tras','Traslado destilador','date','fechaTraslado']].forEach(function(it){g5.appendChild(field(it[0],it[1],it[2],'',ev(rec,it[3])));});sec.appendChild(g5);
+  }
+  sec.appendChild(field('f_obs',rec?'Observaciones':'Observaciones iniciales','textarea','Notas sobre el mosto...',ev(rec,'observaciones')));
+  sec.appendChild(btn(rec?'Guardar cambios':'Guardar fermentacion','btn',function(){var datos={numero:getVal('f_num'),fechaInicio:getVal('f_fecha'),panela_kg:getVal('f_panela'),volumenAgua:getVal('f_agua'),levadura_g:getVal('f_levadura'),levadura_tipo:getVal('f_levTipo'),fosfatoDiamonio_g:getVal('f_fosfato'),sulfatoMagnesio_g:getVal('f_sulfMag'),sulfatoCalcio_g:getVal('f_sulfCal'),acidoCitrico_g:getVal('f_acidoCit'),horaInicioCoccion:getVal('f_horaCoc'),horaHervor:getVal('f_horaHerv'),duracionHervor_min:getVal('f_durHerv'),brixInicial:getVal('f_brix'),densidadInicial:getVal('f_dens'),phInicial:getVal('f_phIni'),phAjustado:getVal('f_phAdj'),tempInoculacion:getVal('f_temp'),observaciones:getVal('f_obs')};
+    if(cerrada){datos.fechaFin=getVal('f_fin');datos.duracionDias=getVal('f_dias');datos.densidadFinal=getVal('f_dfin');datos.brixFinal=getVal('f_bfin');datos.fechaTraslado=getVal('f_tras');}
+    if(rec){var upd=Object.assign({},rec,datos);saveF(state.F.map(function(x){return x.id===rec.id?upd:x;}));go('fermentacion','detail',upd);return;}
+    var ferm=Object.assign({id:uid(),estado:'activa',seguimiento:[]},datos);saveF([ferm].concat(state.F));go('fermentacion','list');}));
+  sec.appendChild(btn('Cancelar','btn-s',function(){if(rec)go('fermentacion','detail',rec);else go('fermentacion','list');}));
   return sec;
 }
 
@@ -213,6 +225,7 @@ function renderFermDetail(){
   // Materia prima
   sec.appendChild(el('h3','','Materia prima'));
   var mp=div('card');[['Panela',(f.panela_kg||'—')+' kg'],['Agua',(f.volumenAgua||'—')+' L'],['Levadura',(f.levadura_g||'—')+' g - '+(f.levadura_tipo||'')],['Fosfato diamonio',(f.fosfatoDiamonio_g||'—')+' g'],['Sulfato magnesio',(f.sulfatoMagnesio_g||'—')+' g'],['Sulfato calcio',(f.sulfatoCalcio_g||'—')+' g'],['Acido citrico',(f.acidoCitrico_g||'—')+' g']].forEach(function(it){mp.appendChild(trRow(it[0],it[1]));});sec.appendChild(mp);
+  if(f.horaInicioCoccion||f.horaHervor||f.duracionHervor_min){sec.appendChild(el('h3','','Coccion'));var cco=div('card');[['Inicio coccion',f.horaInicioCoccion||'—'],['Inicio hervor',f.horaHervor||'—'],['Duracion hervor',(f.duracionHervor_min||'—')+' min']].forEach(function(it){cco.appendChild(trRow(it[0],it[1]));});sec.appendChild(cco);}
   sec.appendChild(el('h3','','Parametros iniciales'));
   var pi=div('card');[['Brix',f.brixInicial||'—'],['Densidad',f.densidadInicial||'—'],['pH ini > ajust',(f.phInicial||'—')+' > '+(f.phAjustado||'—')],['Temp inoculacion',(f.tempInoculacion||'—')+' C']].forEach(function(it){pi.appendChild(trRow(it[0],it[1]));});sec.appendChild(pi);
   // Seguimiento
@@ -240,7 +253,7 @@ function renderFermDetail(){
   actArea.appendChild(row);}
   renderActs();sec.appendChild(actArea);
   var dv=div('divider');sec.appendChild(dv);
-  var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfFerm(f);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar este registro?')){saveF(state.F.filter(function(x){return x.id!==f.id;}));go('fermentacion','list');}}));sec.appendChild(br);
+  var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfFerm(f);}));br.appendChild(btn('Editar registro','btn-x btn-full',function(){go('fermentacion','form',f);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar este registro?')){saveF(state.F.filter(function(x){return x.id!==f.id;}));go('fermentacion','list');}}));sec.appendChild(br);
   return sec;
 }
 
@@ -252,19 +265,27 @@ function renderDestList(){
 }
 
 function renderDestForm(){
+  var rec=state.sel;
   var nextNum=state.D.length>0?Math.max.apply(null,state.D.map(function(d){return parseInt(d.numero)||0;}))+1:52;
-  var colas=[];var sec=div('sec');sec.appendChild(el('h2','','Nueva destilacion'));
-  var g1=div('g2');[['d_num','N destilacion','numeric','',nextNum],['d_fecha','Fecha','date','',today()],['d_hora','Hora inicio','time','',nowT()]].forEach(function(it){g1.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});
-  g1.appendChild(selField('d_ferm','Fermentacion origen',[['','Seleccionar...']].concat(state.F.filter(function(f){return f.estado==='finalizada';}).map(function(f){return[f.id,'#'+f.numero+' · '+fmtDate(f.fechaInicio)];})).concat([['otro','Otro']])));
+  var colas=rec?(rec.colasRecicladas||[]).map(function(c){return Object.assign({},c);}):[];var sec=div('sec');sec.appendChild(el('h2','',rec?'Editar destilacion #'+rec.numero:'Nueva destilacion'));
+  var g1=div('g2');[['d_num','N destilacion','numeric','',nextNum,'numero'],['d_fecha','Fecha','date','',today(),'fecha'],['d_hora','Hora inicio','time','',nowT(),'horaInicio']].forEach(function(it){g1.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});
+  var fermOpts=state.F.filter(function(f){return f.estado==='finalizada'||(rec&&f.id===rec.fermentacionOrigen);}).map(function(f){return[f.id,'#'+f.numero+' · '+fmtDate(f.fechaInicio)];});
+  g1.appendChild(selField('d_ferm','Fermentacion origen',[['','Seleccionar...']].concat(fermOpts).concat([['otro','Otro']]),rec?rec.fermentacionOrigen||'':undefined));
   sec.appendChild(g1);sec.appendChild(el('h3','','Condiciones iniciales'));
-  var g2=div('g2');[['d_dm','Densidad mosto','decimal','','1.000'],['d_vm','Volumen mosto (L)','decimal','','120'],['d_tc','Temp caldera (C)','decimal','16'],['d_tr','Temp refrig (C)','decimal','16.5']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});sec.appendChild(g2);
+  var g2=div('g2');[['d_dm','Densidad mosto','decimal','','1.000','densidadMostoInicial'],['d_vm','Volumen mosto (L)','decimal','','120','volumenMosto_L'],['d_tc','Temp caldera (C)','decimal','16',undefined,'tempCaldera'],['d_tr','Temp refrig (C)','decimal','16.5',undefined,'tempRefrigeracion']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});sec.appendChild(g2);
   sec.appendChild(el('h3','','Colas recicladas'));
   var colasList=document.createElement('div');sec.appendChild(colasList);
-  function refreshColas(){colasList.innerHTML='';colas.forEach(function(c){var cc=div('card');cc.style.padding='6px 10px';cc.style.marginBottom='6px';cc.appendChild(span('',c.volumen_ml+' mL al '+c.abv+'%'));colasList.appendChild(cc);});}
+  function refreshColas(){colasList.innerHTML='';colas.forEach(function(c){var cc=div('card');cc.style.padding='6px 10px';cc.style.marginBottom='6px';var row=div('card-row');row.appendChild(span('',c.volumen_ml+' mL al '+c.abv+'%'));row.appendChild(minibtn('Quitar','del',function(){colas=colas.filter(function(x){return x!==c;});refreshColas();}));cc.appendChild(row);colasList.appendChild(cc);});}
+  refreshColas();
   var ca=document.createElement('div');function mkCBtn(){return btn('+ Agregar cola reciclada','btn-s',function(){ca.innerHTML='';var sc=div('sub-card');var g=div('g2');[['cv','Volumen (mL)','decimal','3000'],['ca','ABV (%)','decimal','20']].forEach(function(it){g.appendChild(field(it[0],it[1],it[2],it[3]));});sc.appendChild(g);sc.appendChild(btn('Agregar','btn',function(){colas.push({id:uid(),volumen_ml:getVal('cv'),abv:getVal('ca')});refreshColas();ca.innerHTML='';ca.appendChild(mkCBtn());}));sc.appendChild(btn('Cancelar','btn-s',function(){ca.innerHTML='';ca.appendChild(mkCBtn());}));ca.appendChild(sc);});}ca.appendChild(mkCBtn());sec.appendChild(ca);
-  sec.appendChild(el('h3','','Insumos especiales'));sec.appendChild(field('d_ins','','text','Ej: 90g cafe organico San Rafael'));
-  sec.appendChild(btn('Iniciar destilacion','btn',function(){var dest={id:uid(),numero:getVal('d_num'),fecha:getVal('d_fecha'),horaInicio:getVal('d_hora'),estado:'en_proceso',fermentacionOrigen:getVal('d_ferm'),densidadMostoInicial:getVal('d_dm'),volumenMosto_L:getVal('d_vm'),tempCaldera:getVal('d_tc'),tempRefrigeracion:getVal('d_tr'),colasRecicladas:colas,insumosEspeciales:getVal('d_ins'),fracciones:[],intervenciones:[],observaciones:''};saveD([dest].concat(state.D));go('destilacion','list');}));
-  sec.appendChild(btn('Cancelar','btn-s',function(){go('destilacion','list');}));
+  sec.appendChild(el('h3','','Insumos especiales'));sec.appendChild(field('d_ins','','text','Ej: 90g cafe organico San Rafael',ev(rec,'insumosEspeciales')));
+  var cerrada=rec&&rec.estado==='finalizada';
+  if(cerrada){sec.appendChild(el('h3','','Cierre'));sec.appendChild(field('d_ef','Eficiencia (%)','decimal','',ev(rec,'eficiencia')));}
+  if(rec)sec.appendChild(field('d_obs','Observaciones','textarea','',ev(rec,'observaciones')));
+  sec.appendChild(btn(rec?'Guardar cambios':'Iniciar destilacion','btn',function(){var datos={numero:getVal('d_num'),fecha:getVal('d_fecha'),horaInicio:getVal('d_hora'),fermentacionOrigen:getVal('d_ferm'),densidadMostoInicial:getVal('d_dm'),volumenMosto_L:getVal('d_vm'),tempCaldera:getVal('d_tc'),tempRefrigeracion:getVal('d_tr'),colasRecicladas:colas,insumosEspeciales:getVal('d_ins')};
+    if(rec){datos.observaciones=getVal('d_obs');if(cerrada)datos.eficiencia=getVal('d_ef');var upd=Object.assign({},rec,datos);saveD(state.D.map(function(x){return x.id===rec.id?upd:x;}));go('destilacion','detail',upd);return;}
+    var dest=Object.assign({id:uid(),estado:'en_proceso',fracciones:[],intervenciones:[],observaciones:''},datos);saveD([dest].concat(state.D));go('destilacion','list');}));
+  sec.appendChild(btn('Cancelar','btn-s',function(){if(rec)go('destilacion','detail',rec);else go('destilacion','list');}));
   return sec;
 }
 
@@ -396,7 +417,7 @@ function renderDestDetail(){
   }
   renderActs();sec.appendChild(actArea);
   var dv=div('divider');sec.appendChild(dv);
-  var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfDest(d);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar?')){saveD(state.D.filter(function(x){return x.id!==d.id;}));go('destilacion','list');}}));sec.appendChild(br);
+  var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfDest(d);}));br.appendChild(btn('Editar registro','btn-x btn-full',function(){go('destilacion','form',d);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar?')){saveD(state.D.filter(function(x){return x.id!==d.id;}));go('destilacion','list');}}));sec.appendChild(br);
   return sec;
 }
 
@@ -413,16 +434,17 @@ function renderSanList(){
 }
 
 function renderSanForm(){
-  sanEquipos=[];var sec=div('sec');sec.appendChild(el('h2','','Registro de saneamiento'));
-  var g1=div('g2');g1.appendChild(field('s_f','Fecha','date','',today()));g1.appendChild(field('s_h','Hora','time','',nowT()));sec.appendChild(g1);
-  sec.appendChild(selField('s_t','Tipo de operacion',[['ambos','Lavado + Desinfeccion'],['lavado','Lavado'],['desinfeccion','Desinfeccion']]));
+  var rec=state.sel;
+  sanEquipos=rec?(rec.equipos||[]).slice():[];var sec=div('sec');sec.appendChild(el('h2','',rec?'Editar registro de saneamiento':'Registro de saneamiento'));
+  var g1=div('g2');g1.appendChild(field('s_f','Fecha','date','',ev(rec,'fecha',today())));g1.appendChild(field('s_h','Hora','time','',ev(rec,'hora',nowT())));sec.appendChild(g1);
+  sec.appendChild(selField('s_t','Tipo de operacion',[['ambos','Lavado + Desinfeccion'],['lavado','Lavado'],['desinfeccion','Desinfeccion']],rec?rec.tipo:undefined));
   var eqLbl=el('label','lbl','Equipos y areas');sec.appendChild(eqLbl);
-  var chips=div('chips');EQUIPOS.forEach(function(eq){var chip=document.createElement('button');chip.className='chip';chip.type='button';chip.textContent=eq;chip.addEventListener('click',function(){if(sanEquipos.includes(eq)){sanEquipos=sanEquipos.filter(function(e){return e!==eq;});chip.classList.remove('on');}else{sanEquipos.push(eq);chip.classList.add('on');}});chips.appendChild(chip);});sec.appendChild(chips);
-  sec.appendChild(el('h3','','Lavado'));var g2=div('g2');[['s_det','Detergente','text','','Detergente neutro industrial'],['s_cdet','Concentracion','text','','300ml/6L agua'],['s_vdet','Volumen (mL)','decimal','','6000']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});sec.appendChild(g2);
-  sec.appendChild(el('h3','','Desinfeccion'));var g3=div('g2');[['s_des','Desinfectante','text','','Acido peracético 8%'],['s_cdes','Dilucion','text','','5ml/L agua'],['s_vdes','Volumen (mL)','decimal','','500'],['s_tc','Tiempo contacto (min)','numeric','','10']].forEach(function(it){g3.appendChild(field(it[0],it[1],it[2],it[3],it[4]));});sec.appendChild(g3);
-  sec.appendChild(field('s_res','Responsable','text','Nombre'));sec.appendChild(field('s_obs','Observaciones','textarea',''));
-  sec.appendChild(btn('Guardar saneamiento','btn',function(){var san={id:uid(),fecha:getVal('s_f'),hora:getVal('s_h'),tipo:getVal('s_t'),equipos:sanEquipos.slice(),detergente:getVal('s_det'),concentracionDetergente:getVal('s_cdet'),volumenDetergente:getVal('s_vdet'),desinfectante:getVal('s_des'),concentracionDesinfectante:getVal('s_cdes'),volumenDesinfectante:getVal('s_vdes'),tiempoContacto_min:getVal('s_tc'),responsable:getVal('s_res'),observaciones:getVal('s_obs')};saveS([san].concat(state.S));go('saneamiento','list');}));
-  sec.appendChild(btn('Cancelar','btn-s',function(){go('saneamiento','list');}));
+  var chips=div('chips');EQUIPOS.concat(sanEquipos.filter(function(e){return EQUIPOS.indexOf(e)<0;})).forEach(function(eq){var chip=document.createElement('button');chip.className='chip'+(sanEquipos.includes(eq)?' on':'');chip.type='button';chip.textContent=eq;chip.addEventListener('click',function(){if(sanEquipos.includes(eq)){sanEquipos=sanEquipos.filter(function(e){return e!==eq;});chip.classList.remove('on');}else{sanEquipos.push(eq);chip.classList.add('on');}});chips.appendChild(chip);});sec.appendChild(chips);
+  sec.appendChild(el('h3','','Lavado'));var g2=div('g2');[['s_det','Detergente','text','','Detergente neutro industrial','detergente'],['s_cdet','Concentracion','text','','300ml/6L agua','concentracionDetergente'],['s_vdet','Volumen (mL)','decimal','','6000','volumenDetergente']].forEach(function(it){g2.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});sec.appendChild(g2);
+  sec.appendChild(el('h3','','Desinfeccion'));var g3=div('g2');[['s_des','Desinfectante','text','','Acido peracético 8%','desinfectante'],['s_cdes','Dilucion','text','','5ml/L agua','concentracionDesinfectante'],['s_vdes','Volumen (mL)','decimal','','500','volumenDesinfectante'],['s_tc','Tiempo contacto (min)','numeric','','10','tiempoContacto_min']].forEach(function(it){g3.appendChild(field(it[0],it[1],it[2],it[3],ev(rec,it[5],it[4])));});sec.appendChild(g3);
+  sec.appendChild(field('s_res','Responsable','text','Nombre',ev(rec,'responsable')));sec.appendChild(field('s_obs','Observaciones','textarea','',ev(rec,'observaciones')));
+  sec.appendChild(btn(rec?'Guardar cambios':'Guardar saneamiento','btn',function(){var san={id:rec?rec.id:uid(),fecha:getVal('s_f'),hora:getVal('s_h'),tipo:getVal('s_t'),equipos:sanEquipos.slice(),detergente:getVal('s_det'),concentracionDetergente:getVal('s_cdet'),volumenDetergente:getVal('s_vdet'),desinfectante:getVal('s_des'),concentracionDesinfectante:getVal('s_cdes'),volumenDesinfectante:getVal('s_vdes'),tiempoContacto_min:getVal('s_tc'),responsable:getVal('s_res'),observaciones:getVal('s_obs')};if(rec){var upd=Object.assign({},rec,san);saveS(state.S.map(function(x){return x.id===rec.id?upd:x;}));go('saneamiento','detail',upd);return;}saveS([san].concat(state.S));go('saneamiento','list');}));
+  sec.appendChild(btn('Cancelar','btn-s',function(){if(rec)go('saneamiento','detail',rec);else go('saneamiento','list');}));
   return sec;
 }
 
@@ -434,7 +456,7 @@ function renderSanDetail(){
   if(s.desinfectante){sec.appendChild(el('h3','','Desinfeccion'));var dc=div('card');[['Desinfectante',s.desinfectante],['Dilucion',s.concentracionDesinfectante||'—'],['Volumen',(s.volumenDesinfectante||'—')+' mL'],['Tiempo contacto',(s.tiempoContacto_min||'—')+' min']].forEach(function(it){dc.appendChild(trRow(it[0],it[1]));});sec.appendChild(dc);}
   if(s.responsable){sec.appendChild(el('h3','','Responsable'));sec.appendChild(p('card muted',s.responsable));}
   if(s.observaciones){sec.appendChild(el('h3','','Observaciones'));sec.appendChild(p('card muted',s.observaciones));}
-  var dv=div('divider');sec.appendChild(dv);var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfSan(s);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar?')){saveS(state.S.filter(function(x){return x.id!==s.id;}));go('saneamiento','list');}}));sec.appendChild(br);
+  var dv=div('divider');sec.appendChild(dv);var br=div('btn-row');br.appendChild(btn('PDF INVIMA','btn-x btn-full',function(){pdfSan(s);}));br.appendChild(btn('Editar registro','btn-x btn-full',function(){go('saneamiento','form',s);}));br.appendChild(btn('Eliminar','btn-danger btn-full',function(){if(confirm('Eliminar?')){saveS(state.S.filter(function(x){return x.id!==s.id;}));go('saneamiento','list');}}));sec.appendChild(br);
   return sec;
 }
 
@@ -471,7 +493,8 @@ function render(){
 }
 
 // ─── INICIO ───────────────────────────────────────────────────────────────────
-loadAll().then(function(){render();}).catch(function(err){document.getElementById('app').innerHTML='<div style="padding:24px;color:#A32D2D;text-align:center"><p style="font-size:16px;font-weight:600;margin-bottom:8px">Error de conexion</p><p style="font-size:13px;color:#666">'+err.message+'</p><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#BA7517;color:#fff;border:none;border-radius:8px;cursor:pointer">Reintentar</button></div>';});
+// Esperar a que termine el ingreso anonimo antes de leer: si se lee antes, Firebase responde "Missing or insufficient permissions".
+new Promise(function(res){var off=auth.onAuthStateChanged(function(u){if(u){off();res();}});}).then(loadAll).then(function(){render();}).catch(function(err){document.getElementById('app').innerHTML='<div style="padding:24px;color:#A32D2D;text-align:center"><p style="font-size:16px;font-weight:600;margin-bottom:8px">Error de conexion</p><p style="font-size:13px;color:#666">'+err.message+'</p><button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#BA7517;color:#fff;border:none;border-radius:8px;cursor:pointer">Reintentar</button></div>';});
 </script>
 </body>
 </html>
